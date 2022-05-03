@@ -1,0 +1,4 @@
+aiohttp==3.8.1
+motor==3.0.0
+APScheduler==3.9.1
+tushare==1.2.85
