@@ -4,6 +4,8 @@ services:
     image: mongo:4.2.9
     container_name: la_mongo
     restart: always
+    ports:
+      - "27017:27017"
     volumes:
       - "./db_data/mongo:/data/db"
       # - "./data/mongo-entrypoint:/docker-entrypoint-initdb.d"
@@ -17,3 +19,5 @@ services:
       - REDIS_ADDR
     depends_on:
       - mongodb
+    ports:
+      - "80:80"
