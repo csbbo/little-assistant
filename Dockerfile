@@ -9,4 +9,4 @@ RUN apt-get update \
 
 WORKDIR /web
 
-CMD python3 main.py
+CMD ['/usr/bin/bash', 'run.sh']

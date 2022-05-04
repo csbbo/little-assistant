@@ -13,9 +13,8 @@ from common.utils.tushare_utils import update_stocks_info
 
 
 def run_scheduler(app: aiohttp.web.Application):
-    update_stocks_info(ts=app['ts'], db=app['db'])
-
     scheduler = AsyncIOScheduler(timezone='Asia/Shanghai')
+    # scheduler.add_job(update_stocks_info, 'interval', seconds=10,  kwargs={"ts": app['ts'], "db": app['db']})
     scheduler.add_job(
         update_stocks_info,
         trigger='cron',

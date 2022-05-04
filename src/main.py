@@ -80,6 +80,9 @@ async def handle_receive_message(request):
             price = await tushare_utils.get_real_time_market(stock['ts_code'])
             content += f"{stock['name']} {price}"
 
+        if not content:
+            content = '查询失败'
+
         to_user_name = xml_data.find('FromUserName').text
         from_user_name = xml_data.find('ToUserName').text
         logger.info(f"reply message {to_user_name=}, {from_user_name=}, {content=}")

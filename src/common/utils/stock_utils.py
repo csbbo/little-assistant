@@ -1,5 +1,4 @@
 import logging
-from typing import Optional, List
 
 from motor.motor_asyncio import AsyncIOMotorClient
 
