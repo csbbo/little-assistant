@@ -1,47 +1,40 @@
-import asyncio
 import hashlib
+import logging
 import sys
 import time
+import xml.etree.ElementTree as ET
+from logging.config import dictConfig
 
-import aiohttp
 import tushare
 from aiohttp import web
-import xml.etree.ElementTree as ET
-import logging
-
 from bson.codec_options import CodecOptions
 from motor.motor_asyncio import AsyncIOMotorClient
 
 import settings
-from common.utils import stock_utils
+from common.utils import stock_utils, tushare_utils
 from periodic_task.scheduler import run_scheduler
 
-logging.basicConfig(level=logging.INFO)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': "[%(asctime)s] [%(levelname)s] [%(threadName)s] [%(name)s: %(lineno)d] %(message)s"
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        }
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console'],
+    }
+}
+dictConfig(LOGGING)
 logger = logging.getLogger(__name__)
-
-
-async def request_get(url, **kwargs):
-    async with aiohttp.ClientSession(**kwargs) as session:
-        async with session.get(url) as resp:
-            return await resp.text()
-
-
-async def get_real_time_market(ts_code: str) -> tuple:
-    """
-    return: price, close
-    """
-    code, market = ts_code.split('.')
-    q = f"{market.lower()}{code}"
-
-    url = f"https://qt.gtimg.cn/q={q}"
-    try:
-        text = await request_get(url, timeout=5)
-    except Exception as e:
-        logger.error(str(e))
-        return None, None
-
-    price_list = text.split('~')
-    return float(price_list[3]), price_list[32]
 
 
 async def handle_check_token(request):
@@ -82,14 +75,14 @@ async def handle_receive_message(request):
         message = xml_data.find('Content').text
         content = ''
 
-        stocks = await stock_utils.query_stocks(db, message, includes=['name', 'ts_code'])
+        stocks = await stock_utils.query_stocks(db, message)
         for stock in stocks:
-            price, _ = get_real_time_market(stock['ts_code'])
+            price = await tushare_utils.get_real_time_market(stock['ts_code'])
             content += f"{stock['name']} {price}"
 
         to_user_name = xml_data.find('FromUserName').text
         from_user_name = xml_data.find('ToUserName').text
-        logger.info(f"{to_user_name=}, {from_user_name=}, {content=}")
+        logger.info(f"reply message {to_user_name=}, {from_user_name=}, {content=}")
 
         resp_xml = f"""
                     <xml>
@@ -128,4 +121,9 @@ if __name__ == '__main__':
         if sys.argv[1] == 'scheduler':
             run_scheduler(create_app())
     else:
-        web.run_app(create_app(), host=settings.HTTP_LISTEN, port=settings.HTTP_PORT)
+        web.run_app(
+            create_app(),
+            host=settings.HTTP_LISTEN,
+            port=settings.HTTP_PORT,
+            access_log=None
+        )

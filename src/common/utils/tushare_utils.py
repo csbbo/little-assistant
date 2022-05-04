@@ -1,9 +1,12 @@
 import logging
 import time
+from typing import Optional
 
 import pypinyin
 from tushare.pro.client import DataApi
 from motor.motor_asyncio import AsyncIOMotorClient
+
+from common.utils.http_utils import request_get
 
 logger = logging.getLogger(__name__)
 
@@ -32,3 +35,22 @@ async def update_stocks_info(ts: DataApi, db: AsyncIOMotorClient) -> None:
 
     spend_time = time.time() - start
     logger.info(f"update stocks info finish, {spend_time=}")
+
+
+async def get_real_time_market(ts_code: str) -> Optional[float]:
+    """
+    return: price
+    """
+    code, market = ts_code.split('.')
+    q = f"{market.lower()}{code}"
+
+    url = f"https://qt.gtimg.cn/q={q}"
+    try:
+        text = await request_get(url, timeout=5)
+
+        market_list = text.split('~')
+        price = float(market_list[3])
+        return price
+    except Exception as e:
+        logger.error(str(e))
+        return None
