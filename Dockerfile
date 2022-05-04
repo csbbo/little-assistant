@@ -9,4 +9,4 @@ RUN apt-get update \
 
 WORKDIR /web
 
-CMD ['/usr/bin/bash', 'run.sh']
+CMD ['/bin/sh', 'run.sh']
